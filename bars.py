@@ -1,10 +1,12 @@
 import json
+import sys
+import math
 
 
-def load_data(filepath):
-    file_to_read = open(filepath, 'r', encoding="utf-8")
-    json_data = file_to_read.read()
-    return json.loads(json_data)
+def load_data(path_file):
+    with open(path_file, 'r', encoding="utf-8") as f:
+        read_data = f.read()
+    return json.loads(read_data)
 
 
 def get_biggest_bar(data):
@@ -15,8 +17,7 @@ def get_biggest_bar(data):
         if biggest_value < current_value:
             biggest_value = current_value
             current_obj = fist_level
-    print(current_obj["Cells"]["Address"])
-    return fist_level  # I can return the name of the biggest bar but in task nothing wrote about it
+    return current_obj["Cells"]["Name"], current_obj["Cells"]["SeatsCount"]
 
 
 def get_smallest_bar(data):
@@ -27,42 +28,42 @@ def get_smallest_bar(data):
         if smallest_value > current_value:
             smallest_value = current_value
             current_obj = fist_level
-    print(current_obj["Cells"]["Address"])
-    return current_obj  # I can return the name of the smallest bar but in task nothing wrote about it
+    return current_obj["Cells"]["Name"], current_obj["Cells"]["SeatsCount"]
 
 
-def get_closest_bar(data, longitude, latitude):
-    difference_coord = None
-    current_obj = None
-    sum_smallest = float("Inf")
-    longitude_diff_current = float("Inf")
-    latitude_diff_current = float("Inf")
+def get_closest_bar(data, longitude_a, latitude_a):
+    distance = float('Inf')
+    jobject_to_return = None
     for fist_level in data:
-        coordinates = fist_level["Cells"]["geoData"]["coordinates"]
-        longitude_current = coordinates[0]
-        latitude_current = coordinates[1]
-        if longitude_current == longitude and latitude_current == latitude:
-            print(current_obj["Cells"]["Address"])
-            return fist_level
+        longitude_current, latitude_current = fist_level["Cells"]["geoData"]["coordinates"]
+        distance_current = get_distance(longitude_current, latitude_current, longitude_a, latitude_a)
+        if distance == distance_current:
+            jobject_to_return = fist_level
+            break
         else:
-            sum_of_current_coordins = (longitude_current + latitude_current)
-            if abs(sum_of_current_coordins) <= sum_smallest:
-                longitude_diff = longitude_current - longitude
-                latitude_diff = latitude_current - latitude
-                if longitude_diff_current > abs(longitude_diff) and latitude_diff_current > abs(latitude_diff):
-                    longitude_diff_current = abs(longitude_diff)
-                    latitude_diff_current = abs(latitude_diff)
-                    current_obj = fist_level
-                    difference_coord
-    print(current_obj["Cells"]["Address"])
-    return current_obj
+            if distance > distance_current:
+                distance = distance_current
+                jobject_to_return = fist_level
+    return jobject_to_return["Cells"]["Name"], jobject_to_return["Cells"]["Address"], distance
+
+
+def get_distance(longitude_b, latitude_b, longitude_a, latitude_a):
+    return math.sqrt((longitude_b - longitude_a) ** 2 + (latitude_b - latitude_a) ** 2)
 
 
 if __name__ == '__main__':
-    json_data = load_data("bars.json")
-    get_biggest_bar(json_data)
-    get_smallest_bar(json_data)
-    # get_closest_bar(json_data, 37.7171150, 55.78262800012168)
-    longitude = int(input("Next values only must be numeric types:\nlongitude: "))
-    latitude = int(input("latitude: "))
-    get_closest_bar(json_data, longitude, latitude)
+    path_to_file = sys.argv[1]
+    json_data = load_data(path_to_file)
+    biggest_bar = get_biggest_bar(json_data)
+    smallest_bar = get_smallest_bar(json_data)
+
+    print('The biggest bar name is: {0}, number of seats are: {1}'.format(biggest_bar[0], biggest_bar[1]))
+    print('The smallest bar  name is: {0}, number of seats are: {1}'.format(smallest_bar[0], smallest_bar[1]))
+
+    longitude = float(input("Next values must be numeric:\nlongitude: "))
+    latitude = float(input("latitude: "))
+
+    closest_bar = get_closest_bar(json_data, longitude, latitude)
+    print('The closest bar name is "{0}", address is "{1}" and distance is: {2}'.format(closest_bar[0],
+                                                                                        closest_bar[1],
+                                                                                        closest_bar[2]))
